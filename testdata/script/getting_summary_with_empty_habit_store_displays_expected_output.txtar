@@ -1,0 +1,2 @@
+exec habit
+stdout 'You''re not currently tracking any habits.\n'

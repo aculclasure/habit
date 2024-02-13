@@ -1,0 +1,3 @@
+exec habit exercising
+exec habit
+stdout '^You are currently on a 1-day streak for ''exercising''. Keep it going!'
