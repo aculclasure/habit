@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io/fs"
+	"maps"
 	"os"
 	"sync"
 )
@@ -19,11 +20,14 @@ type store struct {
 
 // Get returns the given Habit and a bool indicating if the key exists in the
 // store.
-func (s *store) Get(key string) (*Habit, bool) {
+func (s *store) Get(key string) (Habit, bool) {
 	s.mtx.Lock()
 	defer s.mtx.Unlock()
 	h, ok := s.data[key]
-	return h, ok
+	if !ok {
+		return Habit{}, ok
+	}
+	return *h, ok
 }
 
 // Set adds or updates the given key in the store.
@@ -44,7 +48,7 @@ func (s *store) Delete(key string) {
 func (s *store) All() map[string]*Habit {
 	s.mtx.Lock()
 	defer s.mtx.Unlock()
-	return s.data
+	return maps.Clone(s.data)
 }
 
 // Save saves the store to a GOB-encoded file. An error is returned if there is

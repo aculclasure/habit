@@ -12,7 +12,7 @@ import (
 	"github.com/rogpeppe/go-internal/testscript"
 )
 
-func TestTracker_UpsertReturnsErrorForHabitLastUpdatedInTheFuture(t *testing.T) {
+func TestTracker_TrackReturnsErrorForHabitLastUpdatedInTheFuture(t *testing.T) {
 	lastDone, err := time.Parse(time.RFC3339, "2024-02-06T13:00:00Z")
 	if err != nil {
 		t.Fatal(err)
@@ -30,13 +30,13 @@ func TestTracker_UpsertReturnsErrorForHabitLastUpdatedInTheFuture(t *testing.T) 
 		t.Fatal(err)
 	}
 	habit.Now = getTimeFunc(t, "2024-02-05T13:00:00Z")
-	err = tracker.Upsert("programming")
+	err = tracker.Track("programming")
 	if err == nil {
 		t.Error("expected an error when upserting a habit that takes place in the future")
 	}
 }
 
-func TestTracker_UpsertDoesNotModifyStreakMoreThanOnceOnSameCalendarDay(t *testing.T) {
+func TestTracker_TrackDoesNotModifyStreakMoreThanOnceOnSameCalendarDay(t *testing.T) {
 	lastDone, err := time.Parse(time.RFC3339, "2024-02-06T13:00:00Z")
 	if err != nil {
 		t.Fatal(err)
@@ -57,11 +57,11 @@ func TestTracker_UpsertDoesNotModifyStreakMoreThanOnceOnSameCalendarDay(t *testi
 		t.Fatal(err)
 	}
 	habit.Now = getTimeFunc(t, "2024-02-06T13:05:00Z")
-	err = tracker.Upsert("programming")
+	err = tracker.Track("programming")
 	if err != nil {
 		t.Fatal(err)
 	}
-	want := &habit.Habit{
+	want := habit.Habit{
 		Name:          "programming",
 		CurrentStreak: 7,
 		LastDone:      habit.Now(),
@@ -75,7 +75,7 @@ func TestTracker_UpsertDoesNotModifyStreakMoreThanOnceOnSameCalendarDay(t *testi
 	}
 }
 
-func TestTracker_UpsertResetsStreakForHabitsOneOrMoreDaysOld(t *testing.T) {
+func TestTracker_TrackResetsStreakForHabitsOneOrMoreDaysOld(t *testing.T) {
 	habit.Now = getTimeFunc(t, "2024-02-06T13:05:00Z")
 	programmingLastDone, err := time.Parse(time.RFC3339, "2024-02-04T13:00:00Z")
 	if err != nil {
@@ -86,17 +86,17 @@ func TestTracker_UpsertResetsStreakForHabitsOneOrMoreDaysOld(t *testing.T) {
 		t.Fatal(err)
 	}
 	testCases := map[string]struct {
-		input      *habit.Habit
-		wantHabit  *habit.Habit
+		input      habit.Habit
+		wantHabit  habit.Habit
 		wantOutput string
 	}{
 		"Habit last done more than 1 day ago resets streak": {
-			input: &habit.Habit{
+			input: habit.Habit{
 				Name:          "programming",
 				CurrentStreak: 5,
 				LastDone:      programmingLastDone,
 			},
-			wantHabit: &habit.Habit{
+			wantHabit: habit.Habit{
 				Name:          "programming",
 				CurrentStreak: 1,
 				LastDone:      habit.Now(),
@@ -104,12 +104,12 @@ func TestTracker_UpsertResetsStreakForHabitsOneOrMoreDaysOld(t *testing.T) {
 			wantOutput: "You last did the habit 'programming' 2 days ago, so you're starting a new streak today. Good luck!\n",
 		},
 		"Habit last done exactly 1 day ago resets streak": {
-			input: &habit.Habit{
+			input: habit.Habit{
 				Name:          "exercising",
 				CurrentStreak: 5,
 				LastDone:      exercisingLastDone,
 			},
-			wantHabit: &habit.Habit{
+			wantHabit: habit.Habit{
 				Name:          "exercising",
 				CurrentStreak: 1,
 				LastDone:      habit.Now(),
@@ -123,13 +123,13 @@ func TestTracker_UpsertResetsStreakForHabitsOneOrMoreDaysOld(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			store.Set(tc.input.Name, tc.input)
+			store.Set(tc.input.Name, &tc.input)
 			output := new(bytes.Buffer)
 			tracker, err := habit.NewTracker(habit.WithOutput(output), habit.WithStore(store))
 			if err != nil {
 				t.Fatal(err)
 			}
-			err = tracker.Upsert(tc.input.Name)
+			err = tracker.Track(tc.input.Name)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -148,7 +148,7 @@ func TestTracker_UpsertResetsStreakForHabitsOneOrMoreDaysOld(t *testing.T) {
 	}
 }
 
-func TestTracker_UpsertCorrectlyIncrementsStreakForHabitLessThan1DayOld(t *testing.T) {
+func TestTracker_TrackCorrectlyIncrementsStreakForHabitLessThan1DayOld(t *testing.T) {
 	lastDone, err := time.Parse(time.RFC3339, "2024-02-05T13:00:00Z")
 	if err != nil {
 		t.Fatal(err)
@@ -169,11 +169,11 @@ func TestTracker_UpsertCorrectlyIncrementsStreakForHabitLessThan1DayOld(t *testi
 		t.Fatal(err)
 	}
 	habit.Now = getTimeFunc(t, "2024-02-06T12:59:00Z")
-	err = tracker.Upsert("programming")
+	err = tracker.Track("programming")
 	if err != nil {
 		t.Fatal(err)
 	}
-	want := &habit.Habit{
+	want := habit.Habit{
 		Name:          "programming",
 		CurrentStreak: 2,
 		LastDone:      habit.Now(),

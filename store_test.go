@@ -19,7 +19,7 @@ func TestStore_GetReturnsHabitAndOkIfKeyDoesExist(t *testing.T) {
 	if !ok {
 		t.Fatal("wanted ok to be true when getting habit that exists")
 	}
-	want := &habit.Habit{Name: "habit1"}
+	want := habit.Habit{Name: "habit1"}
 	if !cmp.Equal(want, got) {
 		t.Error(cmp.Diff(want, got))
 	}
@@ -53,7 +53,7 @@ func TestStore_SetUpdatesKeyToNewHabit(t *testing.T) {
 	if !ok {
 		t.Fatal("wanted ok to be true when getting habit that exists")
 	}
-	want := &habit.Habit{
+	want := habit.Habit{
 		Name: "intermediate-programming-habit",
 	}
 	if !cmp.Equal(want, got) {

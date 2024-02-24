@@ -84,13 +84,13 @@ func NewTracker(opts ...option) (*Tracker, error) {
 	return t, nil
 }
 
-// Upsert adds a new Habit to the store or updates an already-existing Habit in
+// Track adds a new Habit to the store or updates an already-existing Habit in
 // the store. An error is returned if an update is attempted on a Habit with a
 // timestamp in the future or if the store cannot be saved after adding/updating
 // a Habit.
-func (t *Tracker) Upsert(hbtName string) error {
+func (t *Tracker) Track(hbtName string) error {
 	now := Now()
-	hbt, ok := t.store.Get(hbtName)
+	hbt, ok := t.store.data[hbtName]
 	if !ok {
 		t.store.Set(hbtName, &Habit{
 			Name:          hbtName,
@@ -180,7 +180,7 @@ created automatically the first time a habbit is set using
 		return 1
 	}
 	if len(os.Args) > 1 {
-		err = tracker.Upsert(os.Args[1])
+		err = tracker.Track(os.Args[1])
 		if err != nil {
 			fmt.Fprintln(os.Stderr, err)
 			return 1
