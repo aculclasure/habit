@@ -21,7 +21,7 @@ func TestTracker_TrackReturnsErrorForHabitLastUpdatedInTheFuture(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	store.Set("programming", &habit.Habit{
+	store.Add(habit.Habit{
 		Name:     "programming",
 		LastDone: lastDone,
 	})
@@ -46,7 +46,7 @@ func TestTracker_TrackDoesNotModifyStreakMoreThanOnceOnSameCalendarDay(t *testin
 	if err != nil {
 		t.Fatal(err)
 	}
-	store.Set("programming", &habit.Habit{
+	store.Add(habit.Habit{
 		Name:          "programming",
 		CurrentStreak: 7,
 		LastDone:      lastDone,
@@ -123,7 +123,7 @@ func TestTracker_TrackResetsStreakForHabitsOneOrMoreDaysOld(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			store.Set(tc.input.Name, &tc.input)
+			store.Add(tc.input)
 			output := new(bytes.Buffer)
 			tracker, err := habit.NewTracker(habit.WithOutput(output), habit.WithStore(store))
 			if err != nil {
@@ -158,7 +158,7 @@ func TestTracker_TrackCorrectlyIncrementsStreakForHabitLessThan1DayOld(t *testin
 	if err != nil {
 		t.Fatal(err)
 	}
-	store.Set("programming", &habit.Habit{
+	store.Add(habit.Habit{
 		Name:          "programming",
 		CurrentStreak: 1,
 		LastDone:      lastDone,
@@ -203,7 +203,7 @@ func TestTracker_PrintSummaryPrintsExpectedMessageForHabitsWithExpiredStreaks(t 
 	if err != nil {
 		t.Fatal(err)
 	}
-	store.Set("programming", &habit.Habit{
+	store.Add(habit.Habit{
 		Name:          "programming",
 		CurrentStreak: 1,
 		LastDone:      oneDayAgo,
@@ -212,7 +212,7 @@ func TestTracker_PrintSummaryPrintsExpectedMessageForHabitsWithExpiredStreaks(t 
 	if err != nil {
 		t.Fatal(err)
 	}
-	store.Set("exercising", &habit.Habit{
+	store.Add(habit.Habit{
 		Name:          "exercising",
 		CurrentStreak: 4,
 		LastDone:      threeDaysAgo,

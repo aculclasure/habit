@@ -6,18 +6,19 @@ import (
 
 	"github.com/aculclasure/habit"
 	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 )
 
-func TestStore_GetReturnsHabitAndOkIfKeyDoesExist(t *testing.T) {
+func TestStore_GetReturnsHabitAndOkGivenExistingHabit(t *testing.T) {
 	t.Parallel()
 	store, err := habit.OpenStore("")
 	if err != nil {
 		t.Fatal(err)
 	}
-	store.Set("habit1", &habit.Habit{Name: "habit1"})
+	store.Add(habit.Habit{Name: "habit1"})
 	got, ok := store.Get("habit1")
 	if !ok {
-		t.Fatal("wanted ok to be true when getting habit that exists")
+		t.Fatal("expected ok to be true when getting habit that exists")
 	}
 	want := habit.Habit{Name: "habit1"}
 	if !cmp.Equal(want, got) {
@@ -25,7 +26,7 @@ func TestStore_GetReturnsHabitAndOkIfKeyDoesExist(t *testing.T) {
 	}
 }
 
-func TestStore_GetReturnsNotOkIfKeyDoesNotExist(t *testing.T) {
+func TestStore_GetReturnsNotOkGivenNonExistentHabit(t *testing.T) {
 	t.Parallel()
 	store, err := habit.OpenStore("")
 	if err != nil {
@@ -37,88 +38,97 @@ func TestStore_GetReturnsNotOkIfKeyDoesNotExist(t *testing.T) {
 	}
 }
 
-func TestStore_SetUpdatesKeyToNewHabit(t *testing.T) {
+func TestStore_AddUpdatesExistingHabit(t *testing.T) {
 	t.Parallel()
 	store, err := habit.OpenStore("")
 	if err != nil {
 		t.Fatal(err)
 	}
-	store.Set("programming-habit", &habit.Habit{
-		Name: "beginner-programming-habit",
+	store.Add(habit.Habit{
+		Name:          "habit",
+		CurrentStreak: 1,
 	})
-	store.Set("programming-habit", &habit.Habit{
-		Name: "intermediate-programming-habit",
+	store.Add(habit.Habit{
+		Name:          "habit",
+		CurrentStreak: 2,
 	})
-	got, ok := store.Get("programming-habit")
+	got, ok := store.Get("habit")
 	if !ok {
 		t.Fatal("wanted ok to be true when getting habit that exists")
 	}
 	want := habit.Habit{
-		Name: "intermediate-programming-habit",
+		Name:          "habit",
+		CurrentStreak: 2,
 	}
 	if !cmp.Equal(want, got) {
 		t.Error(cmp.Diff(want, got))
 	}
 }
 
-func TestStore_DeleteDeletesHabitFromStoreIfKeyExists(t *testing.T) {
+// habitSliceCmpOpt provides a comparison option that allows 2 different slices
+// of Habit structs to be compared for equality.
+var habitSliceCmpOpt = cmpopts.SortSlices(func(h1, h2 habit.Habit) bool {
+	return h1.Name < h2.Name
+})
+
+func TestStore_DeleteCorrectlyDeletesExistingHabit(t *testing.T) {
 	t.Parallel()
 	store, err := habit.OpenStore("")
 	if err != nil {
 		t.Fatal(err)
 	}
-	store.Set("habit1", &habit.Habit{Name: "habit1"})
-	store.Set("habit2", &habit.Habit{Name: "habit2"})
-	store.Set("habit3", &habit.Habit{Name: "habit3"})
+	store.Add(habit.Habit{Name: "habit1"})
+	store.Add(habit.Habit{Name: "habit2"})
+	store.Add(habit.Habit{Name: "habit3"})
 	store.Delete("habit2")
-	want := map[string]*habit.Habit{
-		"habit1": {Name: "habit1"},
-		"habit3": {Name: "habit3"},
+	want := []habit.Habit{
+		{Name: "habit1"},
+		{Name: "habit3"},
 	}
 	got := store.All()
-	if !cmp.Equal(want, got) {
-		t.Error(cmp.Diff(want, got))
+	if !cmp.Equal(want, got, habitSliceCmpOpt) {
+		t.Error(cmp.Diff(want, got, habitSliceCmpOpt))
 	}
 }
 
-func TestStore_DeleteDoesNotModifyStoreGivenNonExistentKey(t *testing.T) {
+func TestStore_DeleteDoesNotModifyStoreGivenNonExistentHabit(t *testing.T) {
 	t.Parallel()
 	store, err := habit.OpenStore("")
 	if err != nil {
 		t.Fatal(err)
 	}
-	store.Set("habit1", &habit.Habit{Name: "habit1"})
-	store.Set("habit2", &habit.Habit{Name: "habit2"})
-	store.Set("habit3", &habit.Habit{Name: "habit3"})
+	store.Add(habit.Habit{Name: "habit1"})
+	store.Add(habit.Habit{Name: "habit2"})
+	store.Add(habit.Habit{Name: "habit3"})
 	store.Delete("habit4")
-	want := map[string]*habit.Habit{
-		"habit1": {Name: "habit1"},
-		"habit2": {Name: "habit2"},
-		"habit3": {Name: "habit3"},
+	want := []habit.Habit{
+		{Name: "habit1"},
+		{Name: "habit2"},
+		{Name: "habit3"},
 	}
 	got := store.All()
-	if !cmp.Equal(want, got) {
-		t.Error(cmp.Diff(want, got))
+	if !cmp.Equal(want, got, habitSliceCmpOpt) {
+		t.Error(cmp.Diff(want, got, habitSliceCmpOpt))
 	}
 }
 
-func TestStore_AllReturnsAllKeysAndHabits(t *testing.T) {
+func TestStore_AllReturnsAllHabits(t *testing.T) {
 	t.Parallel()
 	store, err := habit.OpenStore("")
 	if err != nil {
 		t.Fatal(err)
 	}
-	store.Set("habit1", &habit.Habit{Name: "habit1"})
-	store.Set("habit2", &habit.Habit{Name: "habit2"})
-	store.Set("habit3", &habit.Habit{Name: "habit3"})
-	want := map[string]*habit.Habit{
-		"habit1": {Name: "habit1"},
-		"habit2": {Name: "habit2"},
-		"habit3": {Name: "habit3"},
+	store.Add(habit.Habit{Name: "habit1"})
+	store.Add(habit.Habit{Name: "habit2"})
+	store.Add(habit.Habit{Name: "habit3"})
+	want := []habit.Habit{
+		{Name: "habit1"},
+		{Name: "habit2"},
+		{Name: "habit3"},
 	}
 	got := store.All()
-	if !cmp.Equal(want, got) {
-		t.Error(cmp.Diff(want, got))
+	if !cmp.Equal(want, got, habitSliceCmpOpt) {
+		t.Error(cmp.Diff(want, got, habitSliceCmpOpt))
 	}
 }
 
@@ -129,9 +139,9 @@ func TestStore_SaveSavesStorePersistently(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	store.Set("habit1", &habit.Habit{Name: "habit1"})
-	store.Set("habit2", &habit.Habit{Name: "habit2"})
-	store.Set("habit3", &habit.Habit{Name: "habit3"})
+	store.Add(habit.Habit{Name: "habit1"})
+	store.Add(habit.Habit{Name: "habit2"})
+	store.Add(habit.Habit{Name: "habit3"})
 	err = store.Save()
 	if err != nil {
 		t.Fatal(err)
@@ -140,14 +150,14 @@ func TestStore_SaveSavesStorePersistently(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	want := map[string]*habit.Habit{
-		"habit1": {Name: "habit1"},
-		"habit2": {Name: "habit2"},
-		"habit3": {Name: "habit3"},
+	want := []habit.Habit{
+		{Name: "habit1"},
+		{Name: "habit2"},
+		{Name: "habit3"},
 	}
 	got := store2.All()
-	if !cmp.Equal(want, got) {
-		t.Error(cmp.Diff(want, got))
+	if !cmp.Equal(want, got, habitSliceCmpOpt) {
+		t.Error(cmp.Diff(want, got, habitSliceCmpOpt))
 	}
 }
 
@@ -159,7 +169,7 @@ func TestStore_SaveReturnsErrorForUnwritablePath(t *testing.T) {
 	}
 	err = store.Save()
 	if err == nil {
-		t.Error("no error")
+		t.Error("expected an error when saving to unwritable path")
 	}
 }
 
@@ -167,7 +177,7 @@ func TestOpenStoreReturnsErrorForInvalidData(t *testing.T) {
 	t.Parallel()
 	_, err := habit.OpenStore("testdata/empty.store")
 	if err == nil {
-		t.Error("no error")
+		t.Error("expected an error when opening empty store file")
 	}
 }
 
@@ -184,6 +194,6 @@ func TestOpenStoreReturnsErrorForUnreadablePath(t *testing.T) {
 	}
 	_, err = habit.OpenStore(path)
 	if err == nil {
-		t.Error("no error")
+		t.Error("expected an error when opening unreadable path")
 	}
 }

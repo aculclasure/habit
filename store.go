@@ -5,50 +5,51 @@ import (
 	"errors"
 	"fmt"
 	"io/fs"
-	"maps"
 	"os"
 	"sync"
 )
 
-// A store provides a concurrency-safe, key-value store for Habits that is
-// persisted to a local file.
+// A store provides a concurrency-safe store for Habits that is persisted to a
+// local file.
 type store struct {
 	path string
-	data map[string]*Habit
+	data map[string]Habit
 	mtx  sync.Mutex
 }
 
-// Get returns the given Habit and a bool indicating if the key exists in the
-// store.
-func (s *store) Get(key string) (Habit, bool) {
+// Get returns the habit with the given name and a bool indicating if the habit
+// exists in the store.
+func (s *store) Get(name string) (Habit, bool) {
 	s.mtx.Lock()
 	defer s.mtx.Unlock()
-	h, ok := s.data[key]
-	if !ok {
-		return Habit{}, ok
+	h, ok := s.data[name]
+	return h, ok
+}
+
+// Add adds or updates the given habit in the store.
+func (s *store) Add(h Habit) {
+	s.mtx.Lock()
+	defer s.mtx.Unlock()
+	s.data[h.Name] = h
+}
+
+// Delete deletes the habit with the given name from the store. If the
+// habit does not exist in the store, then the delete is a no-op.
+func (s *store) Delete(name string) {
+	s.mtx.Lock()
+	defer s.mtx.Unlock()
+	delete(s.data, name)
+}
+
+// All returns a list of all habits contained in the store.
+func (s *store) All() []Habit {
+	s.mtx.Lock()
+	defer s.mtx.Unlock()
+	var habits []Habit
+	for _, hbt := range s.data {
+		habits = append(habits, hbt)
 	}
-	return *h, ok
-}
-
-// Set adds or updates the given key in the store.
-func (s *store) Set(key string, hb *Habit) {
-	s.mtx.Lock()
-	defer s.mtx.Unlock()
-	s.data[key] = hb
-}
-
-// Delete deletes the given key from the store.
-func (s *store) Delete(key string) {
-	s.mtx.Lock()
-	defer s.mtx.Unlock()
-	delete(s.data, key)
-}
-
-// All returns all the keys and values in the store.
-func (s *store) All() map[string]*Habit {
-	s.mtx.Lock()
-	defer s.mtx.Unlock()
-	return maps.Clone(s.data)
+	return habits
 }
 
 // Save saves the store to a GOB-encoded file. An error is returned if there is
@@ -74,7 +75,7 @@ func (s *store) Save() error {
 func OpenStore(path string) (*store, error) {
 	s := &store{
 		path: path,
-		data: map[string]*Habit{},
+		data: map[string]Habit{},
 	}
 	f, err := os.Open(path)
 	if errors.Is(err, fs.ErrNotExist) {

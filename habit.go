@@ -92,7 +92,7 @@ func (t *Tracker) Track(hbtName string) error {
 	now := Now()
 	hbt, ok := t.store.data[hbtName]
 	if !ok {
-		t.store.Set(hbtName, &Habit{
+		t.store.Add(Habit{
 			Name:          hbtName,
 			CurrentStreak: 1,
 			LastDone:      now,
@@ -128,6 +128,7 @@ func (t *Tracker) Track(hbtName string) error {
 			hbtName, hbt.CurrentStreak, dayOutput)
 	}
 	hbt.LastDone = now
+	t.store.Add(hbt)
 	err := t.store.Save()
 	if err != nil {
 		return err
