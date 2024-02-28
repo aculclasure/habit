@@ -3,7 +3,10 @@ A CLI tool written in Go that allows you to track the performance of your habits
 Add good habits and see how long you can keep the daily streak going for them!
 
 ## Usage
-- Install the `habit` CLI
+  ```
+  go install github.com/aculclasure/habit/cmd/habit@latest
+  ```
+
 - Add a new habit:
 
     ```
@@ -35,17 +38,6 @@ Add good habits and see how long you can keep the daily streak going for them!
     It's been 3 days since you did 'programming'. Stay positive and get back on it!
     You are currently on a 4-day streak for 'strength-training'. Keep it going!
     ```
-
-## Installation
-
-### From Source
-
-- Clone the repo.
-- Install the `habit` binary:
-
-```bash
-cd ./cmd/habit && go install .
-```
 
 ## Description
 
